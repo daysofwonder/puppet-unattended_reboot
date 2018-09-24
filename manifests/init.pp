@@ -102,6 +102,7 @@ class unattended_reboot (
     $cron_ensure = present
     $file_ensure = present
     $pkg_ensure = latest
+    $supporting_packages = present
 
     if $run_unattended_upgrade {
       $unattended_upgrade_cron_ensure = present
@@ -117,7 +118,10 @@ class unattended_reboot (
     $file_ensure = absent
     $pkg_ensure  = purged
     $unattended_upgrade_cron_ensure = absent
+    $supporting_packages = absent
   }
+
+  ensure_packages(['update-notifier-common', 'unattended-upgrades'], { ensure => $supporting_packages })
 
   # Upstart script to release reboot lock on boot
   file { '/etc/init/post-reboot-unlock.conf':
@@ -147,6 +151,10 @@ class unattended_reboot (
       ensure => $pkg_ensure,
       before => File['/etc/init/post-reboot-unlock.conf'],
     }
+
+    File['/usr/local/bin/unattended-reboot'] {
+      require => Package['locksmithctl'],
+    }
   }
 
   file { '/usr/local/bin/unattended-reboot':
@@ -154,11 +162,9 @@ class unattended_reboot (
     mode    => '0755',
     owner   => 'root',
     group   => 'root',
-    require => Package['locksmithctl'],
     content => template('unattended_reboot/unattended-reboot.erb'),
-  } ->
   # Check if a reboot is required and attempt to grab the reboot mutex.
-  unattended_reboot::root_crontab { 'unattended-reboot':
+  } -> unattended_reboot::root_crontab { 'unattended-reboot':
     ensure      => $cron_ensure,
     month       => $cron_month,
     monthday    => $cron_monthday,
