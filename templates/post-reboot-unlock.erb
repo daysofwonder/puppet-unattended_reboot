@@ -3,7 +3,7 @@ Description=Release the reboot lock for unattended reboot (Mannaged by puppet)
 Before=cron.service
 
 [Service]
-ExecStart=/usr/bin/locksmithctl -endpoint='<%= @etcd_endpoints.join(',') %>' unlock '<%= @fqdn %>' 2>&1 | /usr/bin/logger -s -t post-reboot-unlock
+ExecStart=/usr/bin/locksmithctl -endpoint='<%= @etcd_endpoints.join(',') %>' <% if @etcd_cafile != undef %>--etcd-cafile="<%= @etcd_cafile %>"<% end %> <% if @etcd_certfile != undef %>--etcd-certfile="<%= @etcd_certfile %>"<% end %> <% if @etcd_keyfile != undef %>--etcd-keyfile="<%= @etcd_keyfile %>"<% end %> unlock '<%= @fqdn %>' 2>&1 | /usr/bin/logger -s -t post-reboot-unlock
 
 [Install]
 WantedBy=multi-user.target
